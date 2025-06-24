@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "107075718469",
+    "project_id": "streamingadminapp",
+    "storage_bucket": "streamingadminapp.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:107075718469:android:16a90bf6ad4f29da04022c",
+        "android_client_info": {
+          "package_name": "com.ibotv.iptvstreamer"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCXTPqS-9JAZAyyrjw7-01xy2OmSb0IFfo"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
