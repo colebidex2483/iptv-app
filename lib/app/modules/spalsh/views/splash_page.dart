@@ -1,7 +1,7 @@
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:ibo_clone/app/const/appColors.dart';
+import 'package:ibo_clone/app/modules/on_boarding/controllers/onboarding_controller.dart';
 
 class SplashPage extends StatefulWidget {
   const SplashPage({super.key});
@@ -11,14 +11,26 @@ class SplashPage extends StatefulWidget {
 }
 
 class _SplashPageState extends State<SplashPage> {
+
   @override
   void initState() {
     super.initState();
-    Future.delayed(const Duration(seconds: 3), () {
-      Get.offAllNamed('/onboarding');
-    });
+    // Future.delayed(const Duration(seconds: 3), () {
+    //   Get.offAllNamed('/onboarding');
+    // });
+    _startInitialization();
   }
+  void _startInitialization() async {
+    try {
+      final controller = Get.find<OnboardingController>();
+      await controller.initializeApp();
 
+      Get.offAllNamed('/onboarding');
+    } catch (e) {
+      print('❌ Error initializing app: $e');
+      // You can show retry or error page if needed
+    }
+  }
   @override
   Widget build(BuildContext context) {
     return SafeArea(

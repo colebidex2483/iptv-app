@@ -3,19 +3,63 @@ import 'package:ibo_clone/app/widgets/my_button_widget.dart';
 import 'package:sizer/sizer.dart';
 
 import '../const/appColors.dart';
+import '../core/hive_service.dart';
 import 'my_text_widget.dart';
 
-class HideSeriesCategories extends StatelessWidget {
-  const HideSeriesCategories({super.key});
+class HideSeriesCategories extends StatefulWidget {
+  final List<String> allCategories;
+  final VoidCallback? onSaved;
+
+  const HideSeriesCategories({
+    super.key,
+    required this.allCategories,
+    this.onSaved,
+  });
+
+  @override
+  State<HideSeriesCategories> createState() => _HideSeriesCategoriesState();
+}
+
+class _HideSeriesCategoriesState extends State<HideSeriesCategories> {
+  late List<String> hiddenCategories;
+
+  @override
+  void initState() {
+    super.initState();
+    // load from HiveService (like VOD)
+    hiddenCategories = HiveService.getHiddenSeriesCategories()
+        .map((e) => e.toString())
+        .toList();
+  }
+
+  void _toggle(String cat, bool selected) {
+    setState(() {
+      if (selected) {
+        if (!hiddenCategories.contains(cat)) hiddenCategories.add(cat);
+      } else {
+        hiddenCategories.remove(cat);
+      }
+    });
+  }
+
+  void _selectAll() {
+    setState(() {
+      hiddenCategories = List<String>.from(widget.allCategories);
+    });
+  }
+
+  void _saveAndClose() {
+    HiveService.saveHiddenSeriesCategories(hiddenCategories);
+    if (widget.onSaved != null) widget.onSaved!();
+    Navigator.pop(context);
+  }
 
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
       backgroundColor: kPrimColor,
       surfaceTintColor: Colors.white,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(2.0),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(2.0)),
       title: MyText(
         text: 'Hide Series Categories',
         color: Colors.white,
@@ -26,35 +70,41 @@ class HideSeriesCategories extends StatelessWidget {
       content: SingleChildScrollView(
         child: Column(
           mainAxisSize: MainAxisSize.min,
-          children: [
-            CheckboxListTile(
-              title: MyText(text: 'Series ibo', color: Colors.white),
-              value: false,
-              onChanged: (value) {},
-            ),
-          ],
+          children: widget.allCategories.map((cat) {
+            final isHidden = hiddenCategories.contains(cat);
+            return CheckboxListTile(
+              title: MyText(text: cat, color: Colors.white),
+              value: isHidden,
+              onChanged: (val) => _toggle(cat, val ?? false),
+              activeColor: kSecColor,
+              checkColor: Colors.white,
+            );
+          }).toList(),
         ),
       ),
       actions: [
         BorderButton(
-            borderColor: kSecColor,
-            textColor: kwhite,
-            width: 100,
-            onTap: () => Navigator.pop(context),
-            buttonText: 'Cancel',            borderRadius: 2,
+          borderColor: kSecColor,
+          textColor: kwhite,
+          width: 100,
+          onTap: () => Navigator.pop(context),
+          buttonText: 'Cancel',
+          borderRadius: 2,
         ),
         MyButton(
-            backgroundColor: kSecColor,
-            width: 100,
-            onTap: () => Navigator.pop(context),
-            buttonText: 'Select All',            borderRadius: 2,
+          backgroundColor: kSecColor,
+          width: 100,
+          onTap: _selectAll,
+          buttonText: 'Select All',
+          borderRadius: 2,
         ),
         MyButton(
-            backgroundColor: kSecColor,
-            width: 100,
-            onTap: () => Navigator.pop(context),
-            buttonText: 'Ok',            borderRadius: 2,
-        )
+          backgroundColor: kSecColor,
+          width: 100,
+          onTap: _saveAndClose,
+          buttonText: 'Ok',
+          borderRadius: 2,
+        ),
       ],
     );
   }

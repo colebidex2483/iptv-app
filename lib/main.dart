@@ -7,14 +7,29 @@ import 'package:ibo_clone/app/modules/home/views/home_tabs.dart';
 import 'package:ibo_clone/app/modules/settings/views/settings_view.dart';
 import 'package:ibo_clone/app/widgets/my_text_widget.dart';
 import 'package:sizer/sizer.dart';
+import 'package:ibo_clone/app/modules/playlists/controllers/playlists_controller.dart';
+import 'package:ibo_clone/app/modules/on_boarding/controllers/onboarding_controller.dart';
 import 'package:video_player/video_player.dart';
-
+import 'app/core/firebase_service.dart';
+import 'package:hive_flutter/hive_flutter.dart';
+import 'app/core/hive_service.dart';
 import 'app/routes/app_pages.dart';
+import 'package:ibo_clone/app/translations/app_translations.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await FirebaseService.initialize();
+  await Hive.initFlutter(); // Initialize Hive
+  await HiveService.init();
 
-  // Restrict to landscape mode only
+  Get.put(OnboardingController(), permanent: true);
+  await Get.find<OnboardingController>().initializeApp();
+
+  Get.put(PlaylistController(), permanent: true);
+  final playlistController = Get.find<PlaylistController>();
+  await playlistController.initializeDefaultPlaylistIfNeeded();
+  // await playlistController.loadCategories();
+
   await SystemChrome.setPreferredOrientations([
     DeviceOrientation.landscapeLeft,
     DeviceOrientation.landscapeRight,
@@ -30,6 +45,9 @@ void main() async {
         initialRoute: AppPages.INITIAL,
         getPages: AppPages.routes,
         //home: VideoPlayerScreen(),
+        translations: AppTranslations(),
+        locale: const Locale('en', 'US'), // default locale
+        fallbackLocale: const Locale('en', 'US'),
       ),
     ),
   );

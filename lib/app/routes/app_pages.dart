@@ -28,6 +28,7 @@ class AppPages {
     GetPage(
       name: _Paths.SPALSH,
       page: () => const SplashPage(),
+      binding: OnboardingBinding(),
     ),
     GetPage(
       name: _Paths.ONBOARDING,

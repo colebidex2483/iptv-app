@@ -5,8 +5,8 @@ import '../controllers/playlists_controller.dart';
 class PlaylistsBinding extends Bindings {
   @override
   void dependencies() {
-    Get.lazyPut<PlaylistsController>(
-      () => PlaylistsController(),
+    Get.lazyPut<PlaylistController>(
+      () => PlaylistController(),
     );
   }
 }

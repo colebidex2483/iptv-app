@@ -5,10 +5,11 @@ import 'package:ibo_clone/app/modules/home/views/home_tabs.dart';
 import 'package:ibo_clone/app/modules/settings/views/settings_view.dart';
 import 'package:ibo_clone/app/widgets/my_text_widget.dart';
 import 'package:sizer/sizer.dart';
-
+import 'package:flutter/services.dart';
 import '../../../const/appColors.dart';
 import '../controllers/demo_details_controller.dart';
-
+import 'package:ibo_clone/app/modules/on_boarding/controllers/onboarding_controller.dart';
+import 'package:intl/intl.dart';
 class HomeView extends GetView<DemoDetailsController> {
   const HomeView({super.key});
 
@@ -32,7 +33,7 @@ class HomeView extends GetView<DemoDetailsController> {
                 child: Padding(
                   padding: const EdgeInsets.only(right: 8.0),
                   child: Text(
-                    'Current playlist expires: unlimited',
+                    "current_playlist".trParams({"name": "Trial"}),
                     style: TextStyle(
                       fontSize: 16.sp,
                       color: Colors.white,
@@ -57,7 +58,7 @@ class HomeView extends GetView<DemoDetailsController> {
                         Navigator.push(
                           context,
                           MaterialPageRoute(
-                            builder: (context) => HomeTabs(initialTabIndex: 0),
+                            builder: (context) => HomeTabs(initialTabIndex: 1),
                           ),
                         );
                       },
@@ -75,7 +76,7 @@ class HomeView extends GetView<DemoDetailsController> {
                                 color: Colors.white, size: 35.sp),
                             SizedBox(height: 1.h),
                             MyText(
-                              text: 'Live',
+                              text: "live".tr,
                               color: Colors.white,
                               size: 18.sp,
                               weight: FontWeight.w600,
@@ -93,13 +94,13 @@ class HomeView extends GetView<DemoDetailsController> {
                           children: [
                             _buildCustomContainer(
                               icon: Icons.movie,
-                              label: 'Movies',
+                              label: "movies".tr,
                               onPressed: () {
                                 Navigator.push(
                                   context,
                                   MaterialPageRoute(
                                     builder: (context) =>
-                                        HomeTabs(initialTabIndex: 1),
+                                        HomeTabs(initialTabIndex: 2),
                                   ),
                                 );
                               },
@@ -109,13 +110,13 @@ class HomeView extends GetView<DemoDetailsController> {
                             SizedBox(width: 2.w),
                             _buildCustomContainer(
                               icon: Icons.video_library,
-                              label: 'Series',
+                              label: 'series'.tr,
                               onPressed: () {
                                 Navigator.push(
                                   context,
                                   MaterialPageRoute(
                                     builder: (context) =>
-                                        HomeTabs(initialTabIndex: 2),
+                                        HomeTabs(initialTabIndex: 3),
                                   ),
                                 );
                               },
@@ -131,15 +132,17 @@ class HomeView extends GetView<DemoDetailsController> {
                           children: [
                             _buildCustomContainer(
                               icon: Icons.account_circle,
-                              label: 'Account',
-                              onPressed: () {},
+                              label: 'account'.tr,
+                              onPressed: () {
+                                _showAccountInfoDialog(context);
+                              },
                               color: Colors.blue,
                               context: context,
                             ),
                             SizedBox(width: 2.w),
                             _buildCustomContainer(
                               icon: Icons.playlist_add,
-                              label: 'Change Playlist',
+                              label: 'change_playlist'.tr,
                               onPressed: () {
                                 Get.to(() => ChangePlaylist());
                               },
@@ -155,17 +158,23 @@ class HomeView extends GetView<DemoDetailsController> {
                       mainAxisAlignment: MainAxisAlignment.start,
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        _buildText(Icons.settings, 'Settings', () {
+                        _buildText(Icons.settings, 'settings'.tr, () {
                           Get.to(() => SettingsView());
                         }),
                         SizedBox(
                           height: MediaQuery.of(context).size.height * 0.11,
                         ),
-                        _buildText(Icons.refresh, 'Reload', () {}),
+                        _buildText(Icons.refresh, 'reload'.tr, () {
+                          // controller.fetchDeviceInfo(); // replace with your actual reload logic
+                          Get.snackbar("reload".tr, "reload_message".tr,
+                              snackPosition: SnackPosition.BOTTOM,
+                              backgroundColor: Colors.black87,
+                              colorText: Colors.white);
+                        }),
                         SizedBox(
                           height: MediaQuery.of(context).size.height * 0.11,
                         ),
-                        _buildText(Icons.exit_to_app, 'Exit', () {
+                        _buildText(Icons.exit_to_app, 'exit'.tr, () {
                           _showExitDialog(context);
                         }),
                       ],
@@ -256,7 +265,7 @@ class HomeView extends GetView<DemoDetailsController> {
               mainAxisSize: MainAxisSize.min,
               children: [
                 Text(
-                  'Are you sure you want to exit?',
+                  'exit_confirm'.tr,
                   style: TextStyle(
                     color: Colors.white,
                     fontSize: 16.sp,
@@ -278,7 +287,7 @@ class HomeView extends GetView<DemoDetailsController> {
                         ),
                       ),
                       child: Text(
-                        'Cancel',
+                        'cancel'.tr,
                         style: TextStyle(
                           color: Colors.white,
                           fontSize: 14.sp,
@@ -289,6 +298,7 @@ class HomeView extends GetView<DemoDetailsController> {
                       onPressed: () {
                         Navigator.of(context).pop(); // Close the dialog
                         // Add your exit logic here
+                        SystemNavigator.pop();
                       },
                       style: ElevatedButton.styleFrom(
                         backgroundColor: kSecColor,
@@ -297,7 +307,7 @@ class HomeView extends GetView<DemoDetailsController> {
                         ),
                       ),
                       child: Text(
-                        'Yes',
+                        'yes'.tr,
                         style: TextStyle(
                           color: Colors.white,
                           fontSize: 14.sp,
@@ -313,4 +323,80 @@ class HomeView extends GetView<DemoDetailsController> {
       },
     );
   }
+}
+
+void _showAccountInfoDialog(BuildContext context) {
+  final onboardingController = Get.find<OnboardingController>();
+  final deviceId = onboardingController.deviceId.value;
+  final deviceKey = onboardingController.deviceKey.value;
+  final expiryDate = onboardingController.trialStartDate.value
+      .add(const Duration(days: OnboardingController.trialDurationDays));
+  showDialog(
+    context: context,
+    builder: (BuildContext context) {
+      return Dialog(
+        backgroundColor: Colors.deepPurple.shade900, // or your light blue if desired
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(10),
+        ),
+        child: Container(
+          width: MediaQuery.of(context).size.width * 0.6,
+          padding: EdgeInsets.symmetric(vertical: 3.h, horizontal: 4.w),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Align(
+                alignment: Alignment.centerLeft,
+                child: GestureDetector(
+                  onTap: () => Navigator.pop(context),
+                  child: Icon(Icons.arrow_back, color: Colors.white),
+                ),
+              ),
+              SizedBox(height: 2.h),
+              Text(
+                "account_info".tr,
+                style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 18.sp,
+                    fontWeight: FontWeight.bold),
+              ),
+              SizedBox(height: 2.h),
+              _buildInfoRow("mac_id".tr, deviceId),
+              SizedBox(height: 1.h),
+              _buildInfoRow("device_key".tr, deviceKey),
+              _buildInfoRow("expiry_date".tr, onboardingController.isActivated.value
+                  ? "activated_forever".tr
+                  : DateFormat("yyyy-MM-dd").format(expiryDate)), // update if dynamic
+              SizedBox(height: 2.h),
+              Text(
+                "visit_website".tr,
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 12.sp,
+                  decoration: TextDecoration.underline,
+                ),
+              ),
+              SizedBox(height: 1.h),
+            ],
+          ),
+        ),
+      );
+    },
+  );
+}
+
+Widget _buildInfoRow(String title, String value) {
+  return Column(
+    children: [
+      Text(
+        title,
+        style: TextStyle(color: Colors.white70, fontSize: 13.sp),
+      ),
+      SizedBox(height: 0.5.h),
+      Text(
+        value,
+        style: TextStyle(color: Colors.white, fontSize: 15.sp),
+      ),
+    ],
+  );
 }

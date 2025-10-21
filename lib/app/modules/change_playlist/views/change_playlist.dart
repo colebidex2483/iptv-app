@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:ibo_clone/app/modules/playlists/controllers/playlists_controller.dart';
 import 'package:ibo_clone/app/modules/playlists/views/playlist_tabs.dart';
 import 'package:ibo_clone/app/widgets/my_text_widget.dart';
 import 'package:sizer/sizer.dart';
@@ -8,7 +9,9 @@ import '../../../widgets/my_button_widget.dart';
 import '../../../widgets/side_pannel.dart';
 
 class ChangePlaylist extends StatelessWidget {
-  const ChangePlaylist({super.key});
+  ChangePlaylist({super.key});
+
+  final PlaylistController playlistController = Get.put(PlaylistController());
 
   @override
   Widget build(BuildContext context) {
@@ -32,16 +35,21 @@ class ChangePlaylist extends StatelessWidget {
                     padding: EdgeInsets.only(left: 20.0, top: 8.h),
                     child: Row(
                       children: [
+                        IconButton(
+                          icon: const Icon(Icons.arrow_back, color: Colors.white),
+                          onPressed: () => Get.back(),
+                        ),
+                        SizedBox(width: 3.w),
                         Image.asset(
                           'assets/images/bglog.png',
                           width: 8.w,
                         ),
                         MyText(
-                          text: 'Playlists',
+                          text: 'playlists'.tr,
                           color: Colors.white,
                           size: 18.sp,
                           weight: FontWeight.w800,
-                        )
+                        ),
                       ],
                     ),
                   ),
@@ -49,60 +57,85 @@ class ChangePlaylist extends StatelessWidget {
                     padding: EdgeInsets.only(left: 2.w, top: 2.h, right: 1.w),
                     child: Align(
                       alignment: Alignment.topLeft,
-                      child: SizedBox(
-                        height: 70.h,
-                        child: GridView.builder(
-                          shrinkWrap: true,
-                          padding: EdgeInsets.zero,
-                          gridDelegate:
-                              SliverGridDelegateWithFixedCrossAxisCount(
-                            crossAxisCount: 2,
-                            crossAxisSpacing: 3.w,
-                            mainAxisSpacing: 3.h,
-                            childAspectRatio: 2.2,
-                          ),
-                          itemCount: 6, // Number of demo containers
-                          itemBuilder: (context, index) {
-                            return GestureDetector(
-                              onTap: () {
-                                //_showPlaylistOptionsDialog(context);
-                                Get.to(
-                                  PlaylistTabs(),
+                      child: Obx(() {
+                        if (playlistController.isLoading.value) {
+                          return const Center(child: CircularProgressIndicator());
+                        }
+                        return SizedBox(
+                          height: 70.h,
+                          child: GridView.builder(
+                            shrinkWrap: true,
+                            padding: EdgeInsets.zero,
+                            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                              crossAxisCount: 2,
+                              crossAxisSpacing: 3.w,
+                              mainAxisSpacing: 3.h,
+                              childAspectRatio: 2.2,
+                            ),
+                            itemCount: playlistController.playlists.length + 1,
+                            itemBuilder: (context, index) {
+                              if (index < playlistController.playlists.length) {
+                                final playlist = playlistController.playlists[index];
+                                return GestureDetector(
+                                  onTap: () => _showPlaylistOptionsDialog(context, playlist),
+                                  child: Container(
+                                    padding: EdgeInsets.all(2.w),
+                                    decoration: BoxDecoration(
+                                      color: playlist['isConnected'] == true ? Colors.green : kSecColor,
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        MyText(
+                                          text: playlist['name'] ?? '',
+                                          color: Colors.white,
+                                          size: 16.sp,
+                                          weight: FontWeight.w600,
+                                        ),
+                                        MyText(
+                                          text: playlist['url'] ?? '',
+                                          color: Colors.yellow,
+                                          size: 12.sp,
+                                        ),
+                                      ],
+                                    ),
+                                  ),
                                 );
-                              },
-                              child: Container(
-                                padding: EdgeInsets.only(
-                                  left: 2.w,
-                                  top: 2.w,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: kSecColor,
-                                ),
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  mainAxisAlignment: MainAxisAlignment.start,
-                                  children: [
-                                    MyText(
-                                      text: 'Demo ${index + 1}',
-                                      color: Colors.white,
-                                      size: 18.sp,
-                                      weight: FontWeight.w600,
+                              } else {
+                                return GestureDetector(
+                                  onTap: () async {
+                                    final result = await Get.to(() => const PlaylistTabs());
+                                    if (result == true) {
+                                      playlistController.loadPlaylists();
+                                    }
+                                  },
+                                  child: Container(
+                                    decoration: BoxDecoration(
+                                      color: Colors.black45,
+                                      border: Border.all(color: Colors.white54),
+                                      borderRadius: BorderRadius.circular(8),
                                     ),
-                                    MyText(
-                                      text: 'https://github.com/',
-                                      color: Colors.yellow,
-                                      size: 16.sp,
+                                    child: Column(
+                                      mainAxisAlignment: MainAxisAlignment.center,
+                                      children: [
+                                        Icon(Icons.add, color: Colors.white, size: 30.sp),
+                                        SizedBox(height: 1.h),
+                                        MyText(
+                                          text: 'add_playlist'.tr,
+                                          color: Colors.white,
+                                          size: 15.sp,
+                                          weight: FontWeight.w500,
+                                        ),
+                                      ],
                                     ),
-                                    SizedBox(
-                                      height: 4.h,
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            );
-                          },
-                        ),
-                      ),
+                                  ),
+                                );
+                              }
+                            },
+                          ),
+                        );
+                      }),
                     ),
                   ),
                 ],
@@ -113,15 +146,57 @@ class ChangePlaylist extends StatelessWidget {
               height: double.infinity,
               color: Colors.white,
             ),
-            Expanded(flex: 1, child: SidePannel())
+            Expanded(flex: 1, child: SidePannel()),
           ],
         ),
       ),
     );
   }
 
-  // Method to show the Playlist Options dialog with Connect, Edit, and Delete buttons
-  void _showPlaylistOptionsDialog(BuildContext context) {
+  void _showDeleteConfirmation(BuildContext context, Map<String, dynamic> playlist) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: kSecColor,
+        title: MyText(
+          text: 'delete_playlist_title'.tr,
+          color: Colors.white,
+          size: 18.sp,
+          textAlign: TextAlign.center,
+        ),
+        content: MyText(
+          text: 'delete_playlist_message'.trParams({'name': playlist['name'] ?? ''}),
+          color: Colors.white70,
+          size: 16.sp,
+          textAlign: TextAlign.center,
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: MyText(
+              text: 'cancel'.tr,
+              color: Colors.white,
+              size: 16.sp,
+            ),
+          ),
+          TextButton(
+            onPressed: () async {
+              Get.back();
+              await playlistController.deletePlaylist(playlist['id']);
+              Get.back();
+            },
+            child: MyText(
+              text: 'delete'.tr,
+              color: Colors.red,
+              size: 16.sp,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showPlaylistOptionsDialog(BuildContext context, Map<String, dynamic> playlist) {
     showDialog(
       context: context,
       builder: (BuildContext context) {
@@ -129,7 +204,7 @@ class ChangePlaylist extends StatelessWidget {
           backgroundColor: Colors.black87,
           surfaceTintColor: Colors.white,
           title: MyText(
-            text: 'Playlist Options',
+            text: 'playlist_options'.tr,
             color: Colors.white,
             textAlign: TextAlign.center,
           ),
@@ -138,7 +213,14 @@ class ChangePlaylist extends StatelessWidget {
               mainAxisSize: MainAxisSize.min,
               children: [
                 MyText(
-                  text: 'What would you like to do with this playlist?',
+                  text: playlist['name'] ?? 'unnamed_playlist'.tr,
+                  color: Colors.yellow,
+                  size: 16.sp,
+                  textAlign: TextAlign.center,
+                ),
+                SizedBox(height: 2.h),
+                MyText(
+                  text: 'playlist_options_message'.tr,
                   color: Colors.white,
                   textAlign: TextAlign.center,
                 ),
@@ -146,35 +228,45 @@ class ChangePlaylist extends StatelessWidget {
             ),
           ),
           actions: [
+            // Connect/Disconnect button - disabled if already connected
+            if (!(playlist['isConnected'] == true))
+              BorderButton(
+                width: 20.w,
+                borderColor: kOrangeColor,
+                textColor: Colors.white,
+                buttonText: 'connect'.tr,
+                onTap: () async {
+                  Get.back();
+                  await playlistController.connectPlaylist(playlist['id']);
+                  Get.snackbar(
+                    'success'.tr,
+                    'connected_success'.tr,
+                    backgroundColor: Colors.green,
+                  );
+                },
+              ),
+
+            // Edit button - always enabled
             BorderButton(
-              width: 10 * 2.w,
+              width: 20.w,
               borderColor: kOrangeColor,
               textColor: Colors.white,
-              buttonText: 'Connect',
+              buttonText: 'edit'.tr,
               onTap: () {
-                // Connect playlist logic
-                Navigator.pop(context);
+                Get.back();
+                Get.to(() => PlaylistTabs(playlist: playlist));
               },
             ),
+
+            // Delete button - always enabled
             BorderButton(
-              width: 10 * 2.w,
-              borderColor: kOrangeColor,
+              width: 20.w,
+              borderColor: Colors.red,
               textColor: Colors.white,
-              buttonText: 'Edit',
+              buttonText: 'delete'.tr,
               onTap: () {
-                // Edit playlist logic
-                Navigator.pop(context);
-              },
-            ),
-            BorderButton(
-              width: 10 * 2.w,
-              borderColor: kOrangeColor,
-              textColor: Colors.white,
-              buttonText: 'Delete',
-              onTap: () {
-                // Show confirmation dialog for deletion
-                Navigator.pop(context); // Close the options dialog
-                _showDeleteConfirmationDialog(context);
+                Get.back();
+                _showDeleteConfirmation(context, playlist);
               },
             ),
           ],
@@ -183,54 +275,43 @@ class ChangePlaylist extends StatelessWidget {
     );
   }
 
-  // Method to show the Delete Confirmation dialog
-  void _showDeleteConfirmationDialog(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          backgroundColor: Colors.black87,
-          surfaceTintColor: Colors.white,
-          title: MyText(
-            text: 'Confirm Deletion',
-            color: Colors.white,
-            textAlign: TextAlign.center,
-          ),
-          content: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                MyText(
-                  text: 'Are you sure you want to delete this playlist?',
-                  color: Colors.white,
-                  textAlign: TextAlign.center,
-                ),
-              ],
+  void _showEditPlaylistDialog(BuildContext context, Map<String, dynamic> playlist) {
+    final TextEditingController nameController = TextEditingController(text: playlist['name']);
+    final TextEditingController urlController = TextEditingController(text: playlist['url']);
+
+    Get.dialog(
+      AlertDialog(
+        backgroundColor: Colors.black87,
+        title: MyText(text: 'edit_playlist'.tr, color: Colors.white),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: nameController,
+              style: const TextStyle(color: Colors.white),
+              decoration: InputDecoration(hintText: 'playlist_name'.tr, hintStyle: const TextStyle(color: Colors.white54)),
             ),
-          ),
-          actions: [
-            BorderButton(
-              width: 10 * 2.w,
-              borderColor: kOrangeColor,
-              textColor: Colors.white,
-              buttonText: 'Cancel',
-              onTap: () {
-                Navigator.pop(context); // Close the confirmation dialog
-              },
-            ),
-            MyButton(
-              backgroundColor: kOrangeColor,
-              width: 10 * 2.w,
-              buttonText: 'Delete',
-              onTap: () {
-                // Delete playlist logic
-                Navigator.pop(context); // Close the confirmation dialog
-                // Add logic to delete the playlist here
-              },
+            TextField(
+              controller: urlController,
+              style: const TextStyle(color: Colors.white),
+              decoration: InputDecoration(hintText: 'playlist_url'.tr, hintStyle: const TextStyle(color: Colors.white54)),
             ),
           ],
-        );
-      },
+        ),
+        actions: [
+          MyButton(
+            backgroundColor: kOrangeColor,
+            buttonText: 'save'.tr,
+            onTap: () async {
+              await playlistController.updatePlaylist(playlist['id'], {
+                'name': nameController.text.trim(),
+                'url': urlController.text.trim(),
+              });
+              Get.back();
+            },
+          ),
+        ],
+      ),
     );
   }
 }

@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<network-security-config>
+    <!-- Allow cleartext for all domains (not ideal but necessary for IPTV) -->
+    <base-config cleartextTrafficPermitted="false"/>
+
+    <!-- OR be more specific if you know your domains -->
+    <!-- <domain-config cleartextTrafficPermitted="true">
+        <domain includeSubdomains="true">example1.com</domain>
+        <domain includeSubdomains="true">example2.com</domain>
+    </domain-config> -->
+</network-security-config>

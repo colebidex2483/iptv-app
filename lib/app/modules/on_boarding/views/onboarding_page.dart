@@ -1,10 +1,10 @@
-// modules/on_boarding/view/onboarding_page.dart
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:flutter/services.dart';
 import 'package:ibo_clone/app/widgets/common_image_view_widget.dart';
 import 'package:ibo_clone/app/widgets/my_button_widget.dart';
 import 'package:ibo_clone/app/widgets/my_text_widget.dart';
+import 'package:ibo_clone/app/modules/home/views/home_tabs.dart';
 import 'package:ibo_clone/app/modules/demo_details/views/demo_details_view.dart';
 import 'package:sizer/sizer.dart';
 import 'package:intl/intl.dart';
@@ -21,10 +21,16 @@ class OnboardingPage extends GetView<OnboardingController> {
     return SafeArea(
       child: Scaffold(
         body: Obx(() {
-          final isTrialActive = controller.isTrialActive.value;
           final daysLeft = controller.daysLeft.value;
+          final isTrialActive = controller.isTrialActive.value;
           final deviceId = controller.deviceId.value;
           final deviceKey = controller.deviceKey.value;
+          final isActivated = controller.isActivated.value;
+
+          if (isActivated) {
+            Future.microtask(() => Get.to(() => HomeView()));
+            return const Center(child: CircularProgressIndicator());
+          }
 
           return Stack(
             children: [
@@ -58,7 +64,7 @@ class OnboardingPage extends GetView<OnboardingController> {
                               MyText(
                                 textAlign: TextAlign.center,
                                 text: daysLeft > 0
-                                    ? "You have $daysLeft days of free trial remaining"
+                                    ? "You have $daysLeft ${daysLeft == 1 ? 'day' : 'days'} of free trial remaining"
                                     : "This is your last day of free trial",
                                 color: Colors.white,
                                 size: 18.sp,
@@ -71,18 +77,10 @@ class OnboardingPage extends GetView<OnboardingController> {
                                 size: 18.sp,
                                 weight: FontWeight.w500,
                                 textAlign: TextAlign.center,
-
-                              ),
-                              Spaces.y2,
-                              MyText(
-                                text: 'https://livecostplayer.com',
-                                color: Colors.yellow,
-                                size: 18.sp,
-                                weight: FontWeight.w500,
                               ),
                             ] else ...[
                               MyText(
-                                text: 'Your trial has expired',
+                                text: 'Your trial has ended.',
                                 color: Colors.white,
                                 weight: FontWeight.w600,
                                 size: 20.sp,
@@ -90,22 +88,22 @@ class OnboardingPage extends GetView<OnboardingController> {
                               Spaces.y3,
                               MyText(
                                 textAlign: TextAlign.center,
-                                text: "To continue the app, please pay €7.99 via website.",
+                                text: "To continue using the app, visit the website.",
                                 color: Colors.white,
-                                size: 18.sp,
-                                weight: FontWeight.w500,
-                              ),
-                              Spaces.y2,
-                              MyText(
-                                text: 'https://livecostplayer.com',
-                                color: Colors.yellow,
                                 size: 18.sp,
                                 weight: FontWeight.w500,
                               ),
                             ],
                             Spaces.y2,
                             MyText(
-                              text: 'Device ID',
+                              text: 'https://livecostplayer.com',
+                              color: Colors.yellow,
+                              size: 18.sp,
+                              weight: FontWeight.w500,
+                            ),
+                            Spaces.y2,
+                            MyText(
+                              text: 'Mac Address',
                               color: Colors.white,
                               size: 18.sp,
                               weight: FontWeight.w500,
@@ -119,7 +117,7 @@ class OnboardingPage extends GetView<OnboardingController> {
                             ),
                             Spaces.y2,
                             MyText(
-                              text: 'Activation Key',
+                              text: 'Device Key',
                               color: Colors.white,
                               size: 18.sp,
                               weight: FontWeight.w500,
@@ -131,16 +129,7 @@ class OnboardingPage extends GetView<OnboardingController> {
                               size: 17.sp,
                               weight: FontWeight.w500,
                             ),
-                            if (isTrialActive) ...[
-                              Spaces.y2,
-                              MyText(
-                                text: 'Trial started on: ${DateFormat('yyyy-MM-dd').format(controller.trialStartDate.value)}',
-                                color: Colors.white70,
-                                size: 14.sp,
-                              ),
-                            ],
-                            Spaces.y10,
-                            // Buttons
+                            Spaces.y4,
                             Row(
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
@@ -153,7 +142,7 @@ class OnboardingPage extends GetView<OnboardingController> {
                                     textSize: 16.sp,
                                     fontWeight: FontWeight.w600,
                                     onTap: () {
-                                      controller.checkTrialStatus();
+                                      controller.launchPaymentWebsite();
                                     },
                                   ),
                                   const SizedBox(width: 16),
@@ -218,13 +207,13 @@ class OnboardingPage extends GetView<OnboardingController> {
                               height: 55.sp,
                             ),
                             const SizedBox(height: 10),
-                            MyText(
-                              text: 'Scan QR to add playlist',
-                              textAlign: TextAlign.center,
-                              weight: FontWeight.w500,
-                              color: Colors.yellow,
-                              size: 16.sp,
-                            ),
+                            // MyText(
+                            //   text: 'Scan QR to add playlist',
+                            //   textAlign: TextAlign.center,
+                            //   weight: FontWeight.w500,
+                            //   color: Colors.yellow,
+                            //   size: 16.sp,
+                            // ),
                           ],
                         ),
                       ),

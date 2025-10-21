@@ -4,38 +4,15 @@ import 'package:ibo_clone/app/modules/playlists/views/playlist_tabs.dart';
 import 'package:ibo_clone/app/widgets/my_text_widget.dart';
 import 'package:sizer/sizer.dart';
 import '../../../const/appColors.dart';
-import '../../../widgets/my_button_widget.dart';
 import '../../../widgets/side_pannel.dart';
 import '../controllers/playlists_controller.dart';
 
-class PlaylistsPage extends GetView<PlaylistsController> {
+class PlaylistsPage extends GetView<PlaylistController> {
   const PlaylistsPage({super.key});
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      // appBar: PreferredSize(
-      //   preferredSize: Size.fromHeight(10.h),
-      //   child: Container(
-      //     decoration: BoxDecoration(
-      //       gradient: LinearGradient(
-      //         colors: [kBtnColor, kPrimColor],
-      //         begin: Alignment.topLeft,
-      //         end: Alignment.bottomRight,
-      //       ),
-      //     ),
-      //     child: AppBar(
-      //       backgroundColor: Colors.transparent,
-      //         leading: Padding(
-      //           padding: const EdgeInsets.only(left: 20.0),
-      //           child: CommonImageView(imagePath: 'assets/images/bglog.png'),
-      //         ),
-      //         title: MyText(
-      //           text: 'Playlists',
-      //           color: Colors.white,
-      //         )),
-      //   ),
-      // ),
       backgroundColor: Colors.black87,
       body: Container(
         decoration: BoxDecoration(
@@ -48,378 +25,262 @@ class PlaylistsPage extends GetView<PlaylistsController> {
         child: Row(
           children: [
             Expanded(
-                flex: 2,
-                child: Column(
-                  children: [
-                    Padding(
-                      padding: EdgeInsets.only(left: 20.0, top: 8.h),
-                      child: Row(
-                        children: [
-                          Image.asset(
-                            'assets/images/bglog.png',
-                            width: 8.w,
-                          ),
-                          MyText(
-                            text: 'Playlists',
-                            color: Colors.white,
-                            size: 18.sp,
-                            weight: FontWeight.w800,
-                          )
-                        ],
-                      ),
+              flex: 2,
+              child: Column(
+                children: [
+                  Padding(
+                    padding: EdgeInsets.only(left: 20.0, top: 8.h),
+                    child: Row(
+                      children: [
+                        Image.asset(
+                          'assets/images/bglog.png',
+                          width: 8.w,
+                        ),
+                        SizedBox(width: 2.w),
+                        MyText(
+                          text: 'Playlists',
+                          color: Colors.white,
+                          size: 18.sp,
+                          weight: FontWeight.w800,
+                        )
+                      ],
                     ),
-                    Padding(
-                      padding: EdgeInsets.only(left: 5.w),
-                      child: Align(
-                        alignment: Alignment.topLeft,
-                        child: Row(
+                  ),
+                  Padding(
+                    padding: EdgeInsets.only(left: 5.w, top: 4.h),
+                    child: Align(
+                      alignment: Alignment.topLeft,
+                      child: Obx(() {
+                        return Wrap(
+                          spacing: 3.w,
+                          runSpacing: 3.w,
                           children: [
-                            GestureDetector(
-                              onTap: () {
-                                // navigate
-                                Get.toNamed('/demo-details');
-                              },
-                              child: Container(
-                                height: 37.h,
-                                width: 27.w,
-                                padding: EdgeInsets.only(
-                                  left: 2.w,
-                                  top: 2.w,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: kSecColor,
-                                ),
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  mainAxisAlignment: MainAxisAlignment.start,
-                                  children: [
-                                    MyText(
-                                      text: 'Demo',
-                                      color: Colors.white,
-                                      size: 18.sp,
-                                      weight: FontWeight.w600,
-                                    ),
-                                    MyText(
-                                      text: 'https://github.com/',
-                                      color: Colors.yellow,
-                                      size: 16.sp,
-                                    ),
-                                    SizedBox(
-                                      height: 4.h,
-                                    ),
-                                    // ElevatedButton(
-                                    //   onPressed: () {},
-                                    //   style: ElevatedButton.styleFrom(
-                                    //       backgroundColor: kPrimColor,
-                                    //       padding: EdgeInsets.symmetric(
-                                    //           horizontal: 3.w, vertical: 0)
-                                    //       // shape: RoundedRectangleBorder(
-                                    //       //   borderRadius: BorderRadius.circular(10),
-                                    //       // ),
-                                    //       ),
-                                    //   child: MyText(
-                                    //     text: 'Connected',
-                                    //     color: Colors.white,
-                                    //     weight: FontWeight.w600,
-                                    //     size: 16.sp,
-                                    //   ),
-                                    // ),
-                                  ],
-                                ),
-                              ),
+                            ...controller.playlists.map((playlist) => _PlaylistCard(
+                              playlist: playlist,
+                              onTap: () => _showPlaylistOptions(context, playlist),
                             ),
-                            SizedBox(
-                              width: 3.w,
                             ),
-                            GestureDetector(
-                              onTap: () {
-                                //Get.toNamed('/demo-details');
-                                Get.to(()=> PlaylistTabs());
-                              },
-                              child: Container(
-                                height: 37.h,
-                                width: 27.w,
-                                decoration: BoxDecoration(
-                                  color: kSecColor,
-                                ),
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.center,
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    Container(
-                                      padding: EdgeInsets.all(1.w),
-                                      decoration: BoxDecoration(
-                                        color: kPrimColor,
-                                        borderRadius:
-                                            BorderRadius.circular(25.sp),
-                                      ),
-                                      child: Icon(
-                                        Icons.add,
-                                        color: Colors.white,
-                                      ),
-                                    ),
-                                    SizedBox(
-                                      height: 3.h,
-                                    ),
-                                    MyText(
-                                      text: 'Add Playlist',
-                                      color: Colors.white,
-                                      size: 17.sp,
-                                      weight: FontWeight.w600,
-                                    ),
-                                  ],
-                                ),
-                              ),
+                            _AddPlaylistCard(
+                              onTap: () => Get.to(() => const PlaylistTabs()),
                             ),
                           ],
-                        ),
-                      ),
-                    )
-                  ],
-                )),
+                        );
+                      }),
+                    ),
+                  )
+                ],
+              ),
+            ),
             Container(
               width: .3.w,
               height: double.infinity,
               color: Colors.white,
             ),
-            Expanded(flex: 1, child: SidePannel())
+            const Expanded(flex: 1, child: SidePannel())
           ],
         ),
       ),
     );
   }
 
-  // Method to show the Playlist Options dialog with Connect, Edit, and Delete buttons
-  // Method to show the Playlist Options dialog with Connect, Edit, and Delete buttons
-  void _showPlaylistOptionsDialog(BuildContext context) {
-    showDialog(
+  void _showPlaylistOptions(BuildContext context, Map<String, dynamic> playlist) {
+    showModalBottomSheet(
       context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          backgroundColor: Colors.black87,
-          surfaceTintColor: Colors.white,
-          title: MyText(
-            text: 'Playlist Options',
-            color: Colors.white,
-            textAlign: TextAlign.center,
-          ),
-          content: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                MyText(
-                  text: 'What would you like to do with this playlist?',
-                  color: Colors.white,
-                  textAlign: TextAlign.center,
-                ),
-              ],
-            ),
-          ),
-          actions: [
-            BorderButton(
-              width: 10 * 2.w,
-              borderColor: kOrangeColor,
-              textColor: Colors.white,
-              buttonText: 'Connect',
+      backgroundColor: Colors.transparent,
+      builder: (context) => Container(
+        decoration: BoxDecoration(
+          color: kSecColor,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(15)),
+        ),
+        padding: EdgeInsets.all(4.w),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.link, color: Colors.white),
+              title: MyText(
+                text: 'Connect',
+                color: Colors.white,
+                size: 16.sp,
+              ),
               onTap: () {
-                // Connect playlist logic
                 Navigator.pop(context);
+                // Connect logic here
               },
             ),
-            BorderButton(
-              width: 10 * 2.w,
-              borderColor: kOrangeColor,
-              textColor: Colors.white,
-              buttonText: 'Edit',
+            const Divider(color: Colors.white54),
+            ListTile(
+              leading: const Icon(Icons.edit, color: Colors.white),
+              title: MyText(
+                text: 'Edit',
+                color: Colors.white,
+                size: 16.sp,
+              ),
               onTap: () {
-                // Edit playlist logic
                 Navigator.pop(context);
+                // Edit logic here
               },
             ),
-            BorderButton(
-              width: 10 * 2.w,
-              borderColor: kOrangeColor,
-              textColor: Colors.white,
-              buttonText: 'Delete',
+            const Divider(color: Colors.white54),
+            ListTile(
+              leading: const Icon(Icons.delete, color: Colors.red),
+              title: MyText(
+                text: 'Delete',
+                color: Colors.red,
+                size: 16.sp,
+              ),
               onTap: () {
-                // Show confirmation dialog for deletion
-                Navigator.pop(context); // Close the options dialog
-                _showDeleteConfirmationDialog(context);
+                Navigator.pop(context);
+                _showDeleteConfirmation(context, playlist);
               },
             ),
+            SizedBox(height: 2.h),
           ],
-        );
-      },
+        ),
+      ),
     );
   }
 
-// Method to show the Delete Confirmation dialog
-  void _showDeleteConfirmationDialog(BuildContext context) {
+  void _showDeleteConfirmation(BuildContext context, Map<String, dynamic> playlist) {
     showDialog(
       context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          backgroundColor: Colors.black87,
-          surfaceTintColor: Colors.white,
-          title: MyText(
-            text: 'Confirm Deletion',
-            color: Colors.white,
-            textAlign: TextAlign.center,
-          ),
-          content: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                MyText(
-                  text: 'Are you sure you want to delete this playlist?',
-                  color: Colors.white,
-                  textAlign: TextAlign.center,
-                ),
-              ],
+      builder: (context) => AlertDialog(
+        backgroundColor: kSecColor,
+        title: MyText(
+          text: 'Delete Playlist?',
+          color: Colors.white,
+          size: 18.sp,
+          textAlign: TextAlign.center,
+        ),
+        content: MyText(
+          text: 'Are you sure you want to delete "${playlist['name']}"?',
+          color: Colors.white70,
+          size: 16.sp,
+          textAlign: TextAlign.center,
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: MyText(
+              text: 'CANCEL',
+              color: Colors.white,
+              size: 16.sp,
             ),
           ),
-          actions: [
-            BorderButton(
-              width: 10 * 2.w,
-              borderColor: kOrangeColor,
-              textColor: Colors.white,
-              buttonText: 'Cancel',
-              onTap: () {
-                Navigator.pop(context); // Close the confirmation dialog
-              },
+          TextButton(
+            onPressed: () {
+              // Delete logic here
+              Navigator.pop(context);
+            },
+            child: MyText(
+              text: 'DELETE',
+              color: Colors.red,
+              size: 16.sp,
             ),
-            MyButton(
-              backgroundColor: kOrangeColor,
-              width: 10 * 2.w,
-              buttonText: 'Delete',
-              onTap: () {
-                // Delete playlist logic
-                Navigator.pop(context); // Close the confirmation dialog
-                // Add logic to delete the playlist here
-              },
-            ),
-          ],
-        );
-      },
+          ),
+        ],
+      ),
     );
   }
 }
-// Main content area
-// Expanded(
-//   flex: 2,
-//   child: Padding(
-//     padding: EdgeInsets.all(2.w),
-//     child: Column(
-//       children: [
-//         // GridView containing playlists and add button
-//         Expanded(
-//           child: GridView.builder(
-//             gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-//               crossAxisCount: 2, // Number of items per row
-//               crossAxisSpacing: 2.w, // Horizontal spacing
-//               mainAxisSpacing: 2.w, // Vertical spacing
-//               childAspectRatio:
-//               2.5, // Adjust aspect ratio for horizontal layout
-//             ),
-//             itemCount:
-//             4, // 2 playlist items + 1 add button + 1 predefined item
-//             itemBuilder: (context, index) {
-//               if (index == 0) {
-//                 // The first grid item is the predefined container
-//                 return GestureDetector(
-//                   onTap: () {
-//                     // navigate
-//                     Get.toNamed('/demo-details');
-//                   },
-//                   child: Container(
-//                     width: double.infinity,
-//                     height: double.infinity,
-//                     padding: EdgeInsets.all(2.w),
-//                     decoration: BoxDecoration(
-//                       color: Colors.white12,
-//                       borderRadius: BorderRadius.circular(12),
-//                     ),
-//                     child: Column(
-//                       mainAxisAlignment: MainAxisAlignment.center,
-//                       children: [
-//                         Icon(Icons.music_note, color: Colors.white),
-//                         MyText(
-//                           text: 'Demo',
-//                           color: Colors.white,
-//                         ),
-//                         MyText(
-//                           text: 'https://github.com/',
-//                           color: kOrangeColor,
-//                         ),
-//                       ],
-//                     ),
-//                   ),
-//                 );
-//               } else if (index == 3) {
-//                 // The last grid item is the "+" button with text
-//                 return GestureDetector(
-//                   onTap: () {
-//                     showDialog(
-//                       context: context,
-//                       builder: (BuildContext context) {
-//                         return AddPlaylistDialog();
-//                       },
-//                     );
-//                   },
-//                   child: Container(
-//                     width: double.infinity,
-//                     height: double.infinity,
-//                     padding: EdgeInsets.all(2.w),
-//                     decoration: BoxDecoration(
-//                       color: Colors.white12,
-//                       borderRadius: BorderRadius.circular(12),
-//                     ),
-//                     child: Column(
-//                       mainAxisAlignment: MainAxisAlignment.center,
-//                       children: [
-//                         Icon(Icons.add, color: Colors.white),
-//                         SizedBox(height: 1.h),
-//                         MyText(
-//                           text: 'Add Playlist',
-//                           color: Colors.white,
-//                         ),
-//                       ],
-//                     ),
-//                   ),
-//                 );
-//               } else {
-//                 // Other playlist grid items
-//                 return GestureDetector(
-//                   onTap: () {
-//                     _showPlaylistOptionsDialog(context);
-//                   },
-//                   child: PlaylistsWidget(
-//                     dynamicName: 'Dynamic Name $index',
-//                     link: 'https://www.google.com/$index',
-//                     onLinkTap: () {
-//                       // Handle the link click
-//                     },
-//                   ),
-//                 );
-//               }
-//             },
-//           ),
-//         ),
-//         // Bottom text outside of GridView
-//         Padding(
-//           padding: EdgeInsets.all(2.w),
-//           child: MyText(
-//             text: 'This is the text at the bottom of the screen',
-//             color: Colors.white,
-//           ),
-//         ),
-//       ],
-//     ),
-//   ),
-// ),
-//
-// // Side panel on the right
-// SizedBox(
-//   width: 200,
-//   child: SidePannel(),
-// ),
+
+class _PlaylistCard extends StatelessWidget {
+  final Map<String, dynamic> playlist;
+  final VoidCallback onTap;
+
+  const _PlaylistCard({required this.playlist, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: 27.w,
+        height: 37.h,
+        padding: EdgeInsets.all(3.w),
+        decoration: BoxDecoration(
+          color: kSecColor,
+          borderRadius: BorderRadius.circular(10),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            MyText(
+              text: playlist['name'] ?? 'Unnamed Playlist',
+              color: Colors.white,
+              size: 18.sp,
+              weight: FontWeight.w600,
+            ),
+            SizedBox(height: 1.h),
+            MyText(
+              text: playlist['url'] ?? playlist['baseUrl'] ?? '',
+              color: Colors.yellow,
+              size: 14.sp,
+              maxLines: 2,
+              // overflow: TextOverflow.ellipsis,
+            ),
+            const Spacer(),
+            Container(
+              padding: EdgeInsets.symmetric(horizontal: 3.w, vertical: 1.h),
+              decoration: BoxDecoration(
+                color: Colors.green,
+                borderRadius: BorderRadius.circular(4),
+              ),
+              child: MyText(
+                text: 'CONNECTED',
+                color: Colors.white,
+                size: 14.sp,
+                weight: FontWeight.w600,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _AddPlaylistCard extends StatelessWidget {
+  final VoidCallback onTap;
+
+  const _AddPlaylistCard({required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: 27.w,
+        height: 37.h,
+        decoration: BoxDecoration(
+          color: kSecColor,
+          borderRadius: BorderRadius.circular(10),
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              padding: EdgeInsets.all(2.w),
+              decoration: BoxDecoration(
+                color: kPrimColor,
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                Icons.add,
+                color: Colors.white,
+                size: 24.sp,
+              ),
+            ),
+            SizedBox(height: 3.h),
+            MyText(
+              text: 'Add Playlist',
+              color: Colors.white,
+              size: 17.sp,
+              weight: FontWeight.w600,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}

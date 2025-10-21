@@ -14,6 +14,7 @@ class MyText extends StatelessWidget {
   final Color? color;
   final FontStyle? fontStyle;
   final VoidCallback? onTap;
+  final TextOverflow? overflow;
 
   final int? maxLines;
   final double? size;
@@ -43,6 +44,7 @@ class MyText extends StatelessWidget {
     this.paddingBottom = 0,
     this.onTap,
     this.fontStyle,
+    this.overflow,
   }) : super(key: key);
 
   @override

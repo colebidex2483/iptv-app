@@ -2,140 +2,322 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:ibo_clone/app/const/appColors.dart';
 import 'package:ibo_clone/app/modules/search/view/search_page.dart';
-import 'package:ibo_clone/app/widgets/row_widget.dart';
+import 'package:ibo_clone/app/widgets/series_details_page.dart';
 import 'package:sizer/sizer.dart';
+import 'package:cached_network_image/cached_network_image.dart';
+import 'package:shimmer/shimmer.dart';
+import '../../../core/hive_service.dart';
+import '../../playlists/controllers/playlists_controller.dart';
 
 class SeriesPage extends StatefulWidget {
-  const SeriesPage({super.key});
+  final String? searchQuery;
+  const SeriesPage({Key? key, required this.searchQuery}) : super(key: key);
 
   @override
   State<SeriesPage> createState() => _SeriesPageState();
 }
 
 class _SeriesPageState extends State<SeriesPage> {
-  String _selectedOrder = 'Order by Added';
-  int _selectedRowIndex = 0;
+  final PlaylistController controller = Get.find<PlaylistController>();
+
+  String _selectedOrder = "order_by_added".tr;
+  String _selectedCategory = "all".tr;
 
   final List<String> _orderOptions = [
-    'Order by Added',
-    'Order by that',
-    'Order by another',
+    "order_by_added".tr,
+    "order_by_a_z".tr,
+    "order_by_z_a".tr,
+    "order_by_year".tr,
+    "order_by_rating".tr,
   ];
 
-  final List<String> _seriesCategories = [
-    'Recently Viewed',
-    'All',
-    'Favourite',
-    'Demo Series',
-  ];
+  @override
+  void initState() {
+    super.initState();
+    if (controller.connectedPlaylistId.value.isNotEmpty) {
+      controller.loadVodContent(controller.connectedPlaylistId.value);
+    }
+  }
 
-  final Map<String, List<String>> _seriesByCategory = {
-    'Recently Viewed': ['Series 1', 'Series 2'],
-    'All': ['Series 3', 'Series 4', 'Series 5', 'Series 6'],
-    'Favourite': ['Series 7', 'Series 8'],
-    'Demo Series': ['Series 9'],
-  };
+  // 🔹 Filter series by selected category & search
+  List<Map<String, dynamic>> getFilteredSeries() {
+    final allSeries = controller.series;
+    List<Map<String, dynamic>> filtered;
+
+    if (_selectedCategory == "all".tr) {
+      filtered = List<Map<String, dynamic>>.from(allSeries);
+    } else if (_selectedCategory == "resume_to_watch".tr) {
+      filtered = allSeries
+          .where((s) => s['progress'] != null && s['progress'] > 0)
+          .toList();
+    } else if (_selectedCategory == "favorites".tr) {
+      filtered = allSeries
+          .where((s) =>
+          controller.isFavorite(s['id']?.toString(), isSeries: true))
+          .toList();
+    } else {
+      // ✅ new: match by category_name (attached automatically)
+      filtered = allSeries
+          .where((s) =>
+      (s['category_name'] ?? '').toString() == _selectedCategory)
+          .toList();
+    }
+
+    // 🔎 Apply search filter
+    final query = (widget.searchQuery ?? '').toLowerCase().trim();
+    if (query.isNotEmpty) {
+      filtered = filtered
+          .where((s) =>
+          (s['name'] ?? '').toString().toLowerCase().contains(query))
+          .toList();
+    }
+
+    // 🔁 Sorting
+    switch (_selectedOrder) {
+      case var val when val == "order_by_a_z".tr:
+        filtered.sort((a, b) =>
+            (a['name'] ?? '').toString().compareTo((b['name'] ?? '').toString()));
+        break;
+      case var val when val == "order_by_z_a".tr:
+        filtered.sort((a, b) =>
+            (b['name'] ?? '').toString().compareTo((a['name'] ?? '').toString()));
+        break;
+      case var val when val == "order_by_year".tr:
+        filtered.sort((a, b) =>
+            (int.tryParse(b['year']?.toString() ?? '0') ?? 0)
+                .compareTo(int.tryParse(a['year']?.toString() ?? '0') ?? 0));
+        break;
+      case var val when val == "order_by_rating".tr:
+        filtered.sort((a, b) =>
+            (double.tryParse(b['rating']?.toString() ?? '0') ?? 0)
+                .compareTo(double.tryParse(a['rating']?.toString() ?? '0') ?? 0));
+        break;
+      default:
+        break;
+    }
+
+    return filtered;
+  }
+
+  // 🔹 Category Sidebar UI box
+  Widget _buildCategoryBox({
+    required String label,
+    int count = 0,
+    bool isSelected = false,
+    VoidCallback? onTap,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      child: Container(
+        height: 50,
+        decoration: BoxDecoration(
+          color: isSelected ? Colors.blue.withOpacity(0.3) : Colors.transparent,
+          borderRadius: BorderRadius.circular(6),
+          border: Border.all(
+            color: isSelected ? Colors.yellow : Colors.white24,
+            width: isSelected ? 2 : 1,
+          ),
+        ),
+        padding: const EdgeInsets.symmetric(horizontal: 12),
+        margin: const EdgeInsets.only(bottom: 8),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Expanded(
+              child: Text(
+                label,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  color: isSelected ? Colors.yellow : Colors.white,
+                  fontWeight: FontWeight.w600,
+                  fontSize: 14.sp,
+                ),
+              ),
+            ),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+              decoration: BoxDecoration(
+                color: isSelected
+                    ? Colors.yellow.withOpacity(0.2)
+                    : Colors.white.withOpacity(0.08),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Text(
+                count.toString(),
+                style: TextStyle(
+                  color: isSelected ? Colors.yellow : Colors.white70,
+                  fontSize: 12.sp,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // 🔹 Sidebar Categories (reactive)
+  Widget _buildSidebarCategories() {
+    return Obx(() {
+      final allSeries = controller.series;
+      final hiddenVod = HiveService.getHiddenSeriesCategories()
+          .map((e) => e.toString().toLowerCase().trim())
+          .toList();
+
+      final uniqueCategories = allSeries
+          .map((s) => (s['category_name'] ?? '').toString())
+          .where((name) => name.isNotEmpty)
+          .where((name) => !hiddenVod.contains(name.toString().toLowerCase().trim()))
+          .toSet()
+          .toList()
+        ..sort((a, b) => a.compareTo(b));
+
+
+      return ListView(
+        children: [
+          _buildCategoryBox(
+            label: "resume_to_watch".tr,
+            count: allSeries
+                .where((s) => s['progress'] != null && s['progress'] > 0)
+                .length,
+            isSelected: _selectedCategory == "resume_to_watch".tr,
+            onTap: () => setState(() => _selectedCategory = "resume_to_watch".tr),
+          ),
+          _buildCategoryBox(
+            label: "all".tr,
+            count: allSeries.length,
+            isSelected: _selectedCategory == "all".tr,
+            onTap: () => setState(() => _selectedCategory = "all".tr),
+          ),
+          _buildCategoryBox(
+            label: "favorites".tr,
+            count: controller.favoriteSeriesIds.length,
+            isSelected: _selectedCategory == "favorites".tr,
+            onTap: () => setState(() => _selectedCategory = "favorites".tr),
+          ),
+          ...uniqueCategories.map((catName) => _buildCategoryBox(
+            label: catName,
+            count: allSeries
+                .where((s) => s['category_name'] == catName)
+                .length,
+            isSelected: _selectedCategory == catName,
+            onTap: () => setState(() => _selectedCategory = catName),
+          )),
+        ],
+      );
+    });
+  }
+
+  Widget _buildLoadingGrid() {
+    return GridView.builder(
+      padding: EdgeInsets.zero,
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 5,
+        crossAxisSpacing: 10.0,
+        mainAxisSpacing: 10.0,
+        childAspectRatio: 0.7,
+      ),
+      itemCount: 10,
+      itemBuilder: (context, index) {
+        return Container(
+          margin: const EdgeInsets.all(4),
+          child: Column(
+            children: [
+              Expanded(
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(8),
+                  child: Shimmer.fromColors(
+                    baseColor: Colors.grey[800]!,
+                    highlightColor: Colors.grey[600]!,
+                    child: Container(color: Colors.grey[850]),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 8),
+              Container(
+                width: double.infinity,
+                height: 16,
+                color: Colors.grey[700],
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: kPrimColor,
-      resizeToAvoidBottomInset: true,
       body: Row(
         children: [
-          // Sidebar
+          // 🔹 Sidebar
           Container(
-            width: MediaQuery.of(context).size.width * 0.25,
-            margin: EdgeInsets.only(left: 7),
-            child: SingleChildScrollView(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.start,
-                children: [
-                  Icon(
-                    Icons.play_circle_outline_outlined,
-                    size: 60,
-                    color: Colors.white,
-                  ),
-                  SizedBox(height: 2.h),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            width: 240,
+            child: Column(
+              children: [
+                // Header
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  child: Column(
                     children: [
+                      const SizedBox(height: 12),
+                      const Icon(Icons.tv, size: 50, color: Colors.white),
+                      const SizedBox(height: 8),
                       Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Icon(
-                            Icons.arrow_back_ios_new_sharp,
-                            color: Colors.white,
-                            size: 16.sp,
+                          InkWell(
+                            onTap: () => Get.back(),
+                            child: Row(
+                              children: [
+                                const Icon(Icons.arrow_back_ios,
+                                    color: Colors.white, size: 16),
+                                const SizedBox(width: 4),
+                                Text("back".tr,
+                                    style: TextStyle(
+                                        color: Colors.white, fontSize: 14.sp)),
+                              ],
+                            ),
                           ),
-                          SizedBox(width: 5),
-                          Text(
-                            'Back',
-                            style: TextStyle(
-                              fontSize: 16.5.sp,
-                              color: Colors.white,
-                              fontWeight: FontWeight.w600,
+                          InkWell(
+                            onTap: () => Get.to(() => const SearchPage()),
+                            child: Row(
+                              children: [
+                                const Icon(Icons.search,
+                                    color: Colors.white, size: 16),
+                                const SizedBox(width: 4),
+                                Text("search".tr,
+                                    style: TextStyle(
+                                        color: Colors.white, fontSize: 14.sp)),
+                              ],
                             ),
                           ),
                         ],
                       ),
-                      InkWell(
-                        highlightColor: Colors.transparent,
-                        splashColor: Colors.transparent,
-                        onTap: () {
-                          Get.to(() => SearchPage());
-                        },
-                        child: Row(
-                          children: [
-                            Icon(
-                              Icons.search_sharp,
-                              color: Colors.white,
-                              size: 16.sp,
-                            ),
-                            SizedBox(width: 5),
-                            Text(
-                              'Search',
-                              style: TextStyle(
-                                fontSize: 16.5.sp,
-                                color: Colors.white,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
                     ],
                   ),
-                  SizedBox(height: 4.h),
-                  for (int i = 0; i < _seriesCategories.length; i++) ...[
-                    InkWell(
-                      onTap: ()
-                      {
-                        setState(() {
-                          _selectedRowIndex = i;
-                        });
-                      },
-                      child: RowWidget(
-                        text1: _seriesCategories[i],
-                        text2: _seriesByCategory[_seriesCategories[i]]?.length.toString() ?? '0',
-                        isSelected: _selectedRowIndex == i,
-                      ),
-                    ),
-                    SizedBox(height: 1.h),
-                  ],
-                ],
-              ),
+                ),
+                // 🔹 Category List
+                Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 12.0),
+                    child: _buildSidebarCategories(),
+                  ),
+                ),
+              ],
             ),
           ),
-          // Vertical Divider
-          VerticalDivider(
-            color: Colors.white,
-            width: 10,
-            thickness: 1,
-          ),
-          // Main Area
+
+          const VerticalDivider(color: Colors.white, width: 1, thickness: 1),
+
+          // 🔹 Main Series Grid
           Expanded(
             child: Column(
               children: [
+                // Filter Header
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 10.0),
                   child: Row(
@@ -144,89 +326,133 @@ class _SeriesPageState extends State<SeriesPage> {
                       DropdownButton<String>(
                         value: _selectedOrder,
                         dropdownColor: kSecColor,
-                        icon: Icon(Icons.keyboard_arrow_down_outlined,
+                        icon: const Icon(Icons.keyboard_arrow_down_outlined,
                             color: Colors.white),
-                        iconSize: 24,
-                        elevation: 16,
                         style: TextStyle(color: Colors.white, fontSize: 16.sp),
-                        underline: Container(
-                          height: 2,
-                          color: Colors.white,
-                        ),
+                        underline: Container(height: 2, color: Colors.white),
                         onChanged: (String? newValue) {
-                          setState(() {
-                            _selectedOrder = newValue!;
-                          });
+                          setState(() => _selectedOrder = newValue!);
                         },
                         items: _orderOptions
-                            .map<DropdownMenuItem<String>>((String value) {
-                          return DropdownMenuItem<String>(
-                            value: value,
-                            child: Text(value),
-                          );
-                        }).toList(),
+                            .map((opt) => DropdownMenuItem<String>(
+                          value: opt,
+                          child: Text(opt),
+                        ))
+                            .toList(),
                       ),
-                      Text(
-                        'All(${_seriesByCategory[_seriesCategories[_selectedRowIndex]]?.length ?? 0})',
+                      Obx(() => Text(
+                        '$_selectedCategory (${getFilteredSeries().length})',
                         style: TextStyle(
                           color: Colors.white,
                           fontSize: 16.sp,
                           fontWeight: FontWeight.w400,
                         ),
-                      ),
+                      )),
                     ],
                   ),
                 ),
-                SizedBox(height: 10),
+                const SizedBox(height: 10),
+
+                // 🔹 Grid
                 Expanded(
-                  child: GridView.builder(
-                    padding: EdgeInsets.zero,
-                    gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: 5,
-                      crossAxisSpacing: 10.0,
-                      mainAxisSpacing: 10.0,
-                      childAspectRatio:
-                      0.68, // Adjust this value to increase/decrease the height
-                    ),
-                    itemCount: _seriesByCategory[_seriesCategories[_selectedRowIndex]]?.length ?? 0,
-                    itemBuilder: (context, index) {
-                      String series = _seriesByCategory[_seriesCategories[_selectedRowIndex]]![index];
-                      return Container(
-                        decoration: BoxDecoration(
-                          color: Colors.grey,
-                          borderRadius: BorderRadius.circular(2),
-                        ),
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            SizedBox(height: 8.0), // Add some space at the top
-                            Icon(
-                              Icons.perm_media_sharp,
-                              color: Colors.white,
-                              size: 22.sp,
-                            ),
-                            Container(
-                              height: 7.h,
-                              width: double.infinity,
-                              color: kSecColor,
-                              child: Center(
-                                child: Text(
-                                  series,
+                  child: Obx(() {
+                    if (controller.isVodLoading.value) {
+                      return _buildLoadingGrid();
+                    }
+                    final seriesList = getFilteredSeries();
+                    if (seriesList.isEmpty) {
+                      return Center(
+                        child: Text("no_series_found".tr,
+                            style: const TextStyle(color: Colors.white)),
+                      );
+                    }
+
+                    final playlist = controller.currentPlaylist;
+                    final username = playlist?['username'] ?? '';
+                    final password = playlist?['password'] ?? '';
+                    final baseUrl = playlist?['baseUrl'] ?? '';
+
+                    return GridView.builder(
+                      padding: EdgeInsets.zero,
+                      gridDelegate:
+                      const SliverGridDelegateWithFixedCrossAxisCount(
+                        crossAxisCount: 5,
+                        crossAxisSpacing: 10.0,
+                        mainAxisSpacing: 10.0,
+                        childAspectRatio: 0.65,
+                      ),
+                      itemCount: seriesList.length,
+                      itemBuilder: (context, index) {
+                        final series = seriesList[index];
+                        final name = series['name'] ?? "no_title".tr;
+                        final cover = series['cover'] ?? '';
+
+                        return InkWell(
+                          onTap: () async {
+                            final fullInfo = await controller.fetchSeriesDetails(
+                              baseUrl: baseUrl,
+                              username: username,
+                              password: password,
+                              seriesId: series['id']?.toString() ?? '',
+                            );
+                            Get.to(() => SeriesDetailsPage(
+                              series: fullInfo,
+                              seriesList: seriesList,
+                              currentIndex: index,
+                            ));
+                          },
+                          child: Container(
+                            margin: const EdgeInsets.all(4),
+                            child: Column(
+                              children: [
+                                Expanded(
+                                  child: ClipRRect(
+                                    borderRadius: BorderRadius.circular(8),
+                                    child: cover.isNotEmpty
+                                        ? CachedNetworkImage(
+                                      imageUrl: cover,
+                                      fit: BoxFit.cover,
+                                      width: double.infinity,
+                                      placeholder: (c, u) =>
+                                          Shimmer.fromColors(
+                                            baseColor: Colors.grey[800]!,
+                                            highlightColor: Colors.grey[600]!,
+                                            child: Container(
+                                                color: Colors.grey[850]),
+                                          ),
+                                      errorWidget: (c, u, e) => Container(
+                                        color: Colors.grey[800],
+                                        child: const Icon(Icons.tv,
+                                            color: Colors.white,
+                                            size: 40),
+                                      ),
+                                    )
+                                        : Container(
+                                      color: Colors.grey[800],
+                                      child: const Icon(Icons.tv,
+                                          color: Colors.white, size: 40),
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(height: 8),
+                                Text(
+                                  name,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
                                   style: TextStyle(
                                     color: Colors.white,
-                                    fontSize: 16.sp,
+                                    fontSize: 14.sp,
                                     fontWeight: FontWeight.w500,
                                   ),
                                 ),
-                              ),
+                              ],
                             ),
-                          ],
-                        ),
-                      );
-                    },
-                  ),
+                          ),
+                        );
+                      },
+                    );
+                  }),
                 ),
-                SizedBox(height: 8.0),
               ],
             ),
           ),

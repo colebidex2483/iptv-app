@@ -9,14 +9,30 @@ import 'package:sizer/sizer.dart';
 
 import '../../../const/appColors.dart';
 
-class HomeTabs extends StatelessWidget {
+class HomeTabs extends StatefulWidget {
+  final int initialTabIndex;
+  const HomeTabs({super.key, required this.initialTabIndex});
+
+  @override
+  State<HomeTabs> createState() => _HomeTabsState();
+}
+
+class _HomeTabsState extends State<HomeTabs> {
   final HomeTabController controller = Get.put(HomeTabController());
   final TextEditingController _searchController = TextEditingController();
-  final int initialTabIndex;
 
-  HomeTabs({super.key, required this.initialTabIndex}) {
-    controller.changeTabByIndex(initialTabIndex);
+  @override
+  void initState() {
+    super.initState();
+    // Ensure initial tab is set safely after first build
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      controller.changeTabByIndex(widget.initialTabIndex);
+    });
+    _searchController.addListener(() {
+      setState(() {}); // rebuilds _buildContent with updated query
+    });
   }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -24,84 +40,13 @@ class HomeTabs extends StatelessWidget {
       resizeToAvoidBottomInset: true,
       body: Column(
         children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Padding(
-                padding: EdgeInsets.only(top: 11.h, left: 1.w, right: 1.w),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _buildTabItem(context, 'Home', () {
-                      if (controller.selectedTab.value != 'Home') {
-                        controller.changeTab('Home');
-                        Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                                builder: (context) => HomeView()));
-                      }
-                    }),
-                    _buildTabItem(context, 'Live', () {
-                      controller.changeTab('Live');
-                    }),
-                    _buildTabItem(context, 'Movies', () {
-                      controller.changeTab('Movies');
-                    }),
-                    _buildTabItem(context, 'Series', () {
-                      controller.changeTab('Series');
-                    }),
-                    Container(
-                      height: 8.h,
-                      width: 66.sp,
-                      margin: EdgeInsets.only(left: 20),
-                      padding: EdgeInsets.symmetric(horizontal: 8.0),
-                      decoration: BoxDecoration(
-                          color: Colors.transparent,
-                          borderRadius: BorderRadius.circular(35.0.sp),
-                          border: Border.all(
-                            color: kSecColor,
-                            width: 4.sp,
-                          )),
-                      child: Row(
-                        children: [
-                          Icon(
-                            Icons.search,
-                            color: Colors.white,
-                            size: 18.sp,
-                          ),
-                          SizedBox(width: 8.0),
-                          Expanded(
-                            child: TextField(
-                              controller: _searchController,
-                              decoration: InputDecoration(
-                                hintText: 'Search...',
-                                hintStyle: TextStyle(
-                                    color: Colors.white, fontSize: 16.sp),
-                                border: InputBorder.none,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              Padding(
-                padding: EdgeInsets.only(top: 6.h),
-                child: Image.asset('assets/images/bglog.png',
-                    width: 40.sp, height: 30.sp),
-              ),
-            ],
-          ),
-          Divider(
-            color: Colors.grey,
-            thickness: 2,
-          ),
-          // Main content
+          _buildHeader(),
+          Divider(color: Colors.grey, thickness: 2),
+          // Single Obx for efficiency
           Expanded(
             child: Obx(() {
-              return _buildContent();
+              final selected = controller.selectedTab.value;
+              return _buildContent(selected);
             }),
           ),
         ],
@@ -109,44 +54,115 @@ class HomeTabs extends StatelessWidget {
     );
   }
 
-  Widget _buildTabItem(BuildContext context, String label, VoidCallback onTap) {
-    return InkWell(
-      splashColor: Colors.transparent,
-      highlightColor: Colors.transparent,
-      onTap: onTap,
-      child: Padding(
-        padding: EdgeInsets.only(left: 1.w, right: 1.w),
-        child: Row(
-          children: [
-            Obx(() {
-              return Text(
-                label,
-                style: TextStyle(
-                  color: controller.selectedTab.value == label
-                      ? Colors.yellow
-                      : Colors.white,
-                  fontSize:
-                      controller.selectedTab.value == label ? 16.5.sp : 16.sp,
-                  fontWeight: FontWeight.w600,
-                ),
-              );
-            }),
-          ],
+  Widget _buildHeader() {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Padding(
+          padding: EdgeInsets.only(top: 11.h, left: 1.w, right: 1.w),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildTabItem("home", onTap: () {
+                if (controller.selectedTab.value != "home") {
+                  controller.changeTab("home");
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => HomeView()),
+                  );
+                }
+              }),
+              _buildTabItem("live", onTap: () {
+                controller.changeTab("live");
+                _searchController.clear();
+              }),
+              _buildTabItem("movies", onTap: () {
+                controller.changeTab("movies");
+                _searchController.clear();
+              }),
+              _buildTabItem("series", onTap: () {
+                controller.changeTab("series");
+                _searchController.clear();
+              }),
+              _buildSearchBar(),
+            ],
+          ),
         ),
+        Padding(
+          padding: EdgeInsets.only(top: 6.h),
+          child: Image.asset(
+            'assets/images/bglog.png',
+            width: 40.sp,
+            height: 30.sp,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildTabItem(String key, {required VoidCallback onTap}) {
+    return Padding(
+      padding: EdgeInsets.only(left: 1.w, right: 1.w),
+      child: GestureDetector(
+        onTap: onTap,
+        child: Obx(() {
+          final isSelected = controller.selectedTab.value == key;
+          return Text(
+            key.tr, // show translated label
+            style: TextStyle(
+              color: isSelected ? Colors.yellow : Colors.white,
+              fontSize: isSelected ? 16.5.sp : 16.sp,
+              fontWeight: FontWeight.w600,
+            ),
+          );
+        }),
       ),
     );
   }
 
-  Widget _buildContent() {
-    switch (controller.selectedTab.value) {
-      case 'Live':
-        return LivePage();
-      case 'Movies':
-        return MoviesPage();
-      case 'Series':
-        return SeriesPage();
+  Widget _buildSearchBar() {
+    return Container(
+      height: 8.h,
+      width: 66.sp,
+      margin: EdgeInsets.only(left: 20),
+      padding: EdgeInsets.symmetric(horizontal: 8.0),
+      decoration: BoxDecoration(
+        color: Colors.transparent,
+        borderRadius: BorderRadius.circular(35.0.sp),
+        border: Border.all(color: kSecColor, width: 4.sp),
+      ),
+      child: Row(
+        children: [
+          Icon(Icons.search, color: Colors.white, size: 18.sp),
+          SizedBox(width: 8.0),
+          Expanded(
+            child: TextField(
+              controller: _searchController,
+              decoration: InputDecoration(
+                hintText: 'search'.tr,
+                hintStyle: TextStyle(color: Colors.white, fontSize: 16.sp),
+                border: InputBorder.none,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildContent(String selected) {
+    final query = _searchController.text.toLowerCase();
+
+    switch (selected) {
+      case "live":
+        return LivePage(searchQuery: query);
+      case "movies":
+        return MoviesPage(searchQuery: query);
+      case "series":
+        return SeriesPage(searchQuery: query);
       default:
-        return Container(); // Empty container for 'Home' tab
+        return Container(); // fallback
     }
   }
+
 }
